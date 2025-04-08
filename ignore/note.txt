@@ -1,0 +1,1 @@
+Use lambda function to fetch s3 files when triggered by s3 notifications
