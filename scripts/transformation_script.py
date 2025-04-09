@@ -1,211 +1,148 @@
 import pandas as pd
-import json
+import sys
 import logging
-from datetime import datetime, timedelta
-import os
+from datetime import datetime, timezone
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
 
-class DataTransformer:
-    def __init__(self):
-        self.transformation_results = {
-            "success": True,
-            "errors": [],
-            "kpis_generated": {
-                "category_level": 0,
-                "order_level": 0
-            }
-        }
-        
-    def load_data(self, orders_path, order_items_path, products_path):
-        """Load data from CSV files"""
-        try:
-            orders_df = pd.read_csv(orders_path)
-            order_items_df = pd.read_csv(order_items_path)
-            products_df = pd.read_csv(products_path)
-            
-            logger.info(f"Loaded {len(orders_df)} orders, {len(order_items_df)} order items, and {len(products_df)} products")
-            return orders_df, order_items_df, products_df
-            
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error loading data: {str(e)}")
-            logger.error(f"Error loading data: {str(e)}")
-            return None, None, None
+def transform_order_items(df, products_df):
+    # Standardize column names
+    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    products_df.columns = [col.lower().replace(' ', '_') for col in products_df.columns]
     
-    def preprocess_data(self, orders_df, order_items_df, products_df):
-        """Preprocess and merge data for KPI calculation"""
-        try:
-            # Convert date strings to datetime objects
-            for df in [orders_df, order_items_df]:
-                for col in ['created_at', 'shipped_at', 'delivered_at', 'returned_at']:
-                    if col in df.columns:
-                        df[col] = pd.to_datetime(df[col], errors='coerce')
-            
-            # Extract date from datetime for grouping
-            orders_df['order_date'] = orders_df['created_at'].dt.date
-            order_items_df['order_date'] = order_items_df['created_at'].dt.date
-            
-            # Merge order items with product information
-            enriched_items = pd.merge(
-                order_items_df,
-                products_df,
-                how='left',
-                left_on='product_id',
-                right_on='id',
-                suffixes=('', '_product')
-            )
-            
-            # Merge with orders for additional information
-            enriched_data = pd.merge(
-                enriched_items,
-                orders_df,
-                how='left',
-                on='order_id',
-                suffixes=('_item', '')
-            )
-            
-            logger.info(f"Preprocessed data with {len(enriched_data)} rows")
-            return enriched_data
-            
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error preprocessing data: {str(e)}")
-            logger.error(f"Error preprocessing data: {str(e)}")
-            return None
+    # Log input columns for debugging
+    logger.info(f"Order items columns: {list(df.columns)}")
+    logger.info(f"Products columns: {list(products_df.columns)}")
     
-    def extract_category_kpis(self, enriched_data):
-        """
-        Extract category-level KPIs:
-        - category
-        - order_date
-        - daily_revenue
-        - avg_order_value
-        - avg_return_rate
-        """
-        try:
-            # This is just the structure setup - actual computation will be implemented later
-            category_kpis = []
-            # We'll group by category and date to calculate these metrics
-            
-            # For now, just create the structure
-            unique_categories = enriched_data['category'].unique()
-            unique_dates = enriched_data['order_date'].unique()
-            
-            logger.info(f"Prepared structure for {len(unique_categories)} categories × {len(unique_dates)} dates")
-            return category_kpis
-            
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error extracting category KPIs: {str(e)}")
-            logger.error(f"Error extracting category KPIs: {str(e)}")
-            return []
+    # Convert timestamps to datetime
+    time_cols = ['created_at', 'shipped_at', 'delivered_at', 'returned_at']
+    for col in time_cols:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
     
-    def extract_order_kpis(self, enriched_data):
-        """
-        Extract order-level KPIs:
-        - order_date
-        - total_orders
-        - total_revenue
-        - total_items_sold
-        - return_rate
-        - unique_customers
-        """
-        try:
-            # This is just the structure setup - actual computation will be implemented later
-            order_kpis = []
-            # We'll group by date to calculate these metrics
-            
-            # For now, just create the structure
-            unique_dates = enriched_data['order_date'].unique()
-            
-            logger.info(f"Prepared structure for {len(unique_dates)} dates of order-level KPIs")
-            return order_kpis
-            
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error extracting order KPIs: {str(e)}")
-            logger.error(f"Error extracting order KPIs: {str(e)}")
-            return []
+    # Convert sale_price to float
+    df['sale_price'] = df['sale_price'].astype(float)
     
-    def prepare_dynamo_items(self, category_kpis, order_kpis):
-        """
-        Prepare items for DynamoDB in the correct format:
-        - Convert dates to ISO strings
-        - Ensure numeric values are the right type
-        """
-        try:
-            # This is just placeholder code - will be implemented later
-            category_items = []
-            order_items = []
-            
-            # For category KPIs - format for DynamoDB
-            # For order KPIs - format for DynamoDB
-            
-            logger.info(f"Prepared {len(category_items)} category items and {len(order_items)} order items for DynamoDB")
-            return category_items, order_items
-            
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error preparing DynamoDB items: {str(e)}")
-            logger.error(f"Error preparing DynamoDB items: {str(e)}")
-            return [], []
+    # Add order_date for KPI grouping
+    df['order_date'] = df['created_at'].dt.date
     
-    def transform_data(self, orders_path, order_items_path, products_path, output_dir="./output"):
-        """Main method to transform data and generate KPIs"""
-        logger.info("Starting data transformation...")
-        
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
-        
-        # Load data
-        orders_df, order_items_df, products_df = self.load_data(orders_path, order_items_path, products_path)
-        if orders_df is None or order_items_df is None or products_df is None:
-            return self.transformation_results
-        
-        # Preprocess data
-        enriched_data = self.preprocess_data(orders_df, order_items_df, products_df)
-        if enriched_data is None:
-            return self.transformation_results
-        
-        # Extract KPIs (not computing yet, just setting up structure)
-        category_kpis = self.extract_category_kpis(enriched_data)
-        order_kpis = self.extract_order_kpis(enriched_data)
-        
-        # Prepare for DynamoDB
-        category_items, order_items = self.prepare_dynamo_items(category_kpis, order_kpis)
-        
-        # Save results for review
-        try:
-            with open(f"{output_dir}/category_items.json", "w") as f:
-                json.dump(category_items, f, indent=2)
-                
-            with open(f"{output_dir}/order_items.json", "w") as f:
-                json.dump(order_items, f, indent=2)
-                
-            logger.info(f"Results saved to {output_dir}")
-        except Exception as e:
-            self.transformation_results["success"] = False
-            self.transformation_results["errors"].append(f"Error saving results: {str(e)}")
-            logger.error(f"Error saving results: {str(e)}")
-        
-        return self.transformation_results
+    # Join with products to get category
+    if 'id' not in products_df.columns:
+        logger.error("Products dataframe missing 'id' column")
+        raise ValueError("Products dataframe missing 'id' column")
+    
+    df = df.merge(products_df[['id', 'category']], 
+                  left_on='product_id', 
+                  right_on='id', 
+                  how='left')
+    
+    # Log post-merge columns
+    logger.info(f"Post-merge columns: {list(df.columns)}")
+    
+    # Drop 'id' only if it exists
+    if 'id' in df.columns:
+        df = df.drop(columns=['id'])
+    
+    # Keep only relevant columns for KPIs
+    keep_cols = ['order_id', 'user_id', 'product_id', 'status', 'created_at', 'order_date', 
+                 'sale_price', 'category', 'returned_at']
+    df = df[keep_cols]
+    
+    # Add transformed_at timestamp (timezone-aware UTC)
+     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    
+    logger.info("Order items transformation completed")
+    return df, "✔️ Order items transformation completed"
 
-# Example usage
+def transform_orders(df):
+    # Standardize column names
+    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    
+    # Convert timestamps to datetime
+    time_cols = ['created_at', 'shipped_at', 'delivered_at', 'returned_at']
+    for col in time_cols:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
+    
+    # Convert num_of_item to integer
+    df['num_of_item'] = df['num_of_item'].astype(int)
+    
+    # Add order_date for KPI grouping
+    df['order_date'] = df['created_at'].dt.date
+    
+    # Keep only relevant columns for KPIs
+    keep_cols = ['order_id', 'user_id', 'status', 'created_at', 'order_date', 'num_of_item', 'returned_at']
+    df = df[keep_cols]
+    
+    # Add transformed_at timestamp (timezone-aware UTC)
+     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    
+    logger.info("Orders transformation completed")
+    return df, "✔️ Orders transformation completed"
+
+def transform_products(df):
+    # Standardize column names
+    df.columns = [col.lower().replace(' ', '_') for col in df.columns]
+    
+    # Convert prices to float
+    df['cost'] = df['cost'].astype(float)
+    df['retail_price'] = df['retail_price'].astype(float)
+    
+    # Keep only relevant columns for joining (id and category)
+    keep_cols = ['id', 'category']
+    df = df[keep_cols]
+    
+    # Add transformed_at timestamp (timezone-aware UTC)
+     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    
+    logger.info("Products transformation completed")
+    return df, "✔️ Products transformation completed"
+
+def main(input_file, products_file, output_file):
+    try:
+        # Read the input CSV and products CSV
+        df = pd.read_csv(input_file)
+        products_df = pd.read_csv(products_file) if products_file else None
+        
+        # Transform based on file type
+        if 'product_id' in df.columns and 'sale_price' in df.columns:
+            if products_df is None:
+                logger.error("Products file required for order_items transformation")
+                print("TRANSFORM_FAILED: ❌ Products file required for order_items transformation")
+                sys.exit(1)
+            transformed_df, message = transform_order_items(df, products_df)
+        elif 'num_of_item' in df.columns:
+            transformed_df, message = transform_orders(df)
+        elif 'sku' in df.columns:
+            transformed_df, message = transform_products(df)
+        else:
+            logger.error("Unknown file format")
+            print("TRANSFORM_FAILED: ❌ Unknown file format")
+            sys.exit(1)
+        
+        # Save transformed data
+        transformed_df.to_csv(output_file, index=False)
+        
+        # Output result for Step Functions
+        logger.info(message)
+        print(f"TRANSFORM_SUCCESS: {message}")
+        sys.exit(0)
+    
+    except Exception as e:
+        logger.error(f"Error transforming file: {str(e)}")
+        print(f"TRANSFORM_FAILED: ❌ Error transforming file - {str(e)}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    transformer = DataTransformer()
-    results = transformer.transform_data(
-        "orders.csv",
-        "order_items.csv",
-        "products.csv"
-    )
-    
-    # Output results to a file
-    with open("transformation_results.json", "w") as f:
-        json.dump(results, f, indent=2)
-    
-    print(f"Transformation {'completed successfully' if results['success'] else 'failed'}")
-    if not results["success"]:
-        print(f"Found {len(results['errors'])} errors.")
+    if len(sys.argv) != 4:
+        logger.error("Please provide input file, products file (or 'none' if not needed), and output file paths")
+        print("TRANSFORM_FAILED: ❌ Please provide input file, products file (or 'none' if not needed), and output file paths")
+        sys.exit(1)
+    input_file, products_file, output_file = sys.argv[1], sys.argv[2], sys.argv[3]
+    main(input_file, products_file if products_file != 'none' else None, output_file)

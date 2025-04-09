@@ -1,0 +1,24 @@
+{
+  "family": "validate-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::448049788660:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "validate-container",
+      "image": "448049788660.dkr.ecr.us-east-1.amazonaws.com/validate-data:latest",
+      "essential": true,
+      "command": ["/app/data/order_items.csv"],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/validate-task",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "validate"
+        }
+      }
+    }
+  ]
+}
