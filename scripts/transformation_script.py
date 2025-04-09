@@ -2,6 +2,8 @@ import pandas as pd
 import sys
 import logging
 from datetime import datetime, timezone
+import boto3
+import io
 
 # Configure logging
 logging.basicConfig(
@@ -11,14 +13,58 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize S3 client
+s3_client = boto3.client('s3')
+
+def is_s3_path(path):
+    """Check if the path is an S3 path"""
+    return path.startswith('s3://')
+
+def parse_s3_path(s3_path):
+    """Extract bucket and key from S3 path"""
+    path = s3_path.replace('s3://', '')
+    bucket = path.split('/')[0]
+    key = '/'.join(path.split('/')[1:])
+    return bucket, key
+
+def read_csv_from_s3(s3_path):
+    """Read CSV file from S3"""
+    bucket, key = parse_s3_path(s3_path)
+    try:
+        logger.info(f"Reading data from s3://{bucket}/{key}")
+        response = s3_client.get_object(Bucket=bucket, Key=key)
+        df = pd.read_csv(io.BytesIO(response['Body'].read()))
+        logger.info(f"Successfully read {len(df)} records from S3")
+        return df
+    except Exception as e:
+        logger.error(f"Failed to read from S3: {str(e)}")
+        raise e
+
+def write_csv_to_s3(df, s3_path):
+    """Write dataframe to CSV in S3"""
+    bucket, key = parse_s3_path(s3_path)
+    try:
+        logger.info(f"Writing {len(df)} records to s3://{bucket}/{key}")
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        s3_client.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=csv_buffer.getvalue()
+        )
+        logger.info(f"Successfully wrote data to S3")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to write to S3: {str(e)}")
+        raise e
+
 def transform_order_items(df, products_df):
+    """Transform order items data"""
+    logger.info(f"Starting order items transformation process")
+    
     # Standardize column names
     df.columns = [col.lower().replace(' ', '_') for col in df.columns]
     products_df.columns = [col.lower().replace(' ', '_') for col in products_df.columns]
-    
-    # Log input columns for debugging
-    logger.info(f"Order items columns: {list(df.columns)}")
-    logger.info(f"Products columns: {list(products_df.columns)}")
     
     # Convert timestamps to datetime
     time_cols = ['created_at', 'shipped_at', 'delivered_at', 'returned_at']
@@ -37,30 +83,33 @@ def transform_order_items(df, products_df):
         logger.error("Products dataframe missing 'id' column")
         raise ValueError("Products dataframe missing 'id' column")
     
+    logger.info("Joining order items with product data")
     df = df.merge(products_df[['id', 'category']], 
                   left_on='product_id', 
                   right_on='id', 
                   how='left')
     
-    # Log post-merge columns
-    logger.info(f"Post-merge columns: {list(df.columns)}")
-    
-    # Drop 'id' only if it exists
-    if 'id' in df.columns:
-        df = df.drop(columns=['id'])
+    # Handle column renaming due to merge
+    if 'id_x' in df.columns and 'id_y' in df.columns:
+        df = df.rename(columns={'id_x': 'id'}).drop(columns=['id_y'])
     
     # Keep only relevant columns for KPIs
     keep_cols = ['order_id', 'user_id', 'product_id', 'status', 'created_at', 'order_date', 
                  'sale_price', 'category', 'returned_at']
+    # Only keep columns that exist in the dataframe
+    keep_cols = [col for col in keep_cols if col in df.columns]
     df = df[keep_cols]
     
     # Add transformed_at timestamp (timezone-aware UTC)
-     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
     
-    logger.info("Order items transformation completed")
+    logger.info(f"Order items transformation completed successfully: {len(df)} records processed")
     return df, "✔️ Order items transformation completed"
 
 def transform_orders(df):
+    """Transform orders data"""
+    logger.info(f"Starting orders transformation process")
+    
     # Standardize column names
     df.columns = [col.lower().replace(' ', '_') for col in df.columns]
     
@@ -78,15 +127,20 @@ def transform_orders(df):
     
     # Keep only relevant columns for KPIs
     keep_cols = ['order_id', 'user_id', 'status', 'created_at', 'order_date', 'num_of_item', 'returned_at']
+    # Only keep columns that exist in the dataframe
+    keep_cols = [col for col in keep_cols if col in df.columns]
     df = df[keep_cols]
     
     # Add transformed_at timestamp (timezone-aware UTC)
-     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
     
-    logger.info("Orders transformation completed")
+    logger.info(f"Orders transformation completed successfully: {len(df)} records processed")
     return df, "✔️ Orders transformation completed"
 
 def transform_products(df):
+    """Transform products data"""
+    logger.info(f"Starting products transformation process")
+    
     # Standardize column names
     df.columns = [col.lower().replace(' ', '_') for col in df.columns]
     
@@ -99,16 +153,35 @@ def transform_products(df):
     df = df[keep_cols]
     
     # Add transformed_at timestamp (timezone-aware UTC)
-     # df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
+    df.loc[:, 'transformed_at'] = datetime.now(timezone.utc).isoformat()
     
-    logger.info("Products transformation completed")
+    logger.info(f"Products transformation completed successfully: {len(df)} records processed")
     return df, "✔️ Products transformation completed"
 
 def main(input_file, products_file, output_file):
     try:
-        # Read the input CSV and products CSV
-        df = pd.read_csv(input_file)
-        products_df = pd.read_csv(products_file) if products_file else None
+        logger.info(f"Starting transformation process")
+        logger.info(f"Input file: {input_file}")
+        logger.info(f"Products file: {products_file}")
+        logger.info(f"Output file: {output_file}")
+        
+        # Read CSV file(s) based on path type
+        if is_s3_path(input_file):
+            df = read_csv_from_s3(input_file)
+        else:
+            logger.info(f"Reading data from local file: {input_file}")
+            df = pd.read_csv(input_file)
+            logger.info(f"Successfully read {len(df)} records from local file")
+        
+        # Read products file if provided
+        products_df = None
+        if products_file:
+            if is_s3_path(products_file):
+                products_df = read_csv_from_s3(products_file)
+            else:
+                logger.info(f"Reading products data from local file: {products_file}")
+                products_df = pd.read_csv(products_file)
+                logger.info(f"Successfully read {len(products_df)} records from local file")
         
         # Transform based on file type
         if 'product_id' in df.columns and 'sale_price' in df.columns:
@@ -122,26 +195,31 @@ def main(input_file, products_file, output_file):
         elif 'sku' in df.columns:
             transformed_df, message = transform_products(df)
         else:
-            logger.error("Unknown file format")
+            logger.error("Unable to determine file type from columns")
             print("TRANSFORM_FAILED: ❌ Unknown file format")
             sys.exit(1)
         
         # Save transformed data
-        transformed_df.to_csv(output_file, index=False)
+        if is_s3_path(output_file):
+            write_csv_to_s3(transformed_df, output_file)
+        else:
+            logger.info(f"Writing {len(transformed_df)} records to local file: {output_file}")
+            transformed_df.to_csv(output_file, index=False)
+            logger.info("Successfully wrote data to local file")
         
         # Output result for Step Functions
-        logger.info(message)
+        logger.info(f"Transformation completed successfully: {message}")
         print(f"TRANSFORM_SUCCESS: {message}")
         sys.exit(0)
     
     except Exception as e:
-        logger.error(f"Error transforming file: {str(e)}")
+        logger.error(f"Error in transformation process: {str(e)}")
         print(f"TRANSFORM_FAILED: ❌ Error transforming file - {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        logger.error("Please provide input file, products file (or 'none' if not needed), and output file paths")
+        logger.error("Incorrect number of arguments provided")
         print("TRANSFORM_FAILED: ❌ Please provide input file, products file (or 'none' if not needed), and output file paths")
         sys.exit(1)
     input_file, products_file, output_file = sys.argv[1], sys.argv[2], sys.argv[3]

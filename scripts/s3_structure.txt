@@ -1,0 +1,34 @@
+s3://your-ecommerce-bucket/
+├── data/                   # Root folder for all incoming raw files
+│   ├── 20250409/         # Date-based subfolders
+│   │   ├── manifest_20250409.json  # Single manifest for all files
+│   │   ├── orders/     # Orders-specific files
+│   │   │   ├── orders_part1.csv
+│   │   │   └── orders_part2.csv
+│   │   └── order_items/  # Order items-specific files
+│   │       ├── order_items_part1.csv
+│   │       └── order_items_part2.csv
+├── processed/             # Successfully processed files
+│   ├── 20250409/
+│   │   ├── orders_merged_20250409.csv
+│   │   └── order_items_merged_20250409.csv
+│   └── 20250410/
+│       ├── orders_20250410.csv
+│       └── order_items_20250410.csv
+├── errors/                # Failed files
+│   ├── 20250409/
+│   │   ├── orders/
+│   │   │   ├── orders_part1_20250409.csv
+│   │   │   └── error_log_orders_20250409.txt
+│   │   └── order_items/
+│   │       ├── order_items_part1_20250409.csv
+│   │       └── error_log_order_items_20250409.txt
+│   └── 20250410/
+│       ├── orders/
+│       │   ├── orders_20250410.csv
+│       └── order_items/
+│           ├── order_items_20250410.csv
+└── logs/                  # Optional: Pipeline execution logs
+    ├── 20250409/
+    │   └── pipeline_run_20250409.json
+    └── 20250410/
