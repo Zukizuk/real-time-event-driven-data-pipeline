@@ -1,20 +1,7 @@
 {
-  "name": "manifest.json",
-  "version": "1.0",
-  "directory": "data/",
-  "purpose": "Store incoming transactional data.",
-  "schema": {
-    "extension": ".csv",
-    "name_pattern": "streams[0-9]+.csv",
-    "fields_required": true,
-    "fields": {
-      "user_id": { "type": "int", "required": true },
-      "track_id": { "type": "string", "required": true },
-      "listen_time": { "type": "timestamp", "required": true }
-    },
-    "validation": {
-      "on_error": "quarantine",
-      "quarantine_path": "data/quarantine"
-    }
+  "date": "20250409",
+  "files": {
+    "orders": ["orders_part1.csv", "orders_part2.csv"],
+    "order_items": ["order_items_part1.csv", "order_items_part2.csv"]
   }
 }

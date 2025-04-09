@@ -1,0 +1,192 @@
+{
+  "Comment": "Real-Time Event-Driven Data Pipeline for an E-Commerce shop",
+  "StartAt": "Validate Step",
+  "States": {
+    "Validate Step": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Validate Orders",
+          "States": {
+            "Validate Orders": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "Cluster": "ecommerce-pipeline-cluster",
+                "TaskDefinition": "validate-task",
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet-0d8436345ee46b7b8",
+                      "subnet-0c258e856f0e04aca"
+                    ],
+                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "validate-container",
+                      "Command": [
+                        "s3://real-time-bucket-p4-zuki/processed/20250409/orders_merged_20250409.csv"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Validate Order Items",
+          "States": {
+            "Validate Order Items": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "Cluster": "ecommerce-pipeline-cluster",
+                "TaskDefinition": "validate-task",
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet-0d8436345ee46b7b8",
+                      "subnet-0c258e856f0e04aca"
+                    ],
+                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "validate-container",
+                      "Command": [
+                        "s3://real-time-bucket-p4-zuki/processed/20250409/order_items_merged_20250409.csv"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Transform Step"
+    },
+    "Transform Step": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Transform Orders",
+          "States": {
+            "Transform Orders": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "Cluster": "ecommerce-pipeline-cluster",
+                "TaskDefinition": "transform-task",
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet-0d8436345ee46b7b8",
+                      "subnet-0c258e856f0e04aca"
+                    ],
+                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "transform-container",
+                      "Command": [
+                        "s3://real-time-bucket-p4-zuki/processed/20250409/orders_merged_20250409.csv",
+                        "none",
+                        "s3://real-time-bucket-p4-zuki/temp/orders_transformed_20250409.csv"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Transform Order Items",
+          "States": {
+            "Transform Order Items": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::ecs:runTask.sync",
+              "Parameters": {
+                "Cluster": "ecommerce-pipeline-cluster",
+                "TaskDefinition": "transform-task",
+                "LaunchType": "FARGATE",
+                "NetworkConfiguration": {
+                  "AwsvpcConfiguration": {
+                    "Subnets": [
+                      "subnet-0d8436345ee46b7b8",
+                      "subnet-0c258e856f0e04aca"
+                    ],
+                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "AssignPublicIp": "ENABLED"
+                  }
+                },
+                "Overrides": {
+                  "ContainerOverrides": [
+                    {
+                      "Name": "transform-container",
+                      "Command": [
+                        "s3://real-time-bucket-p4-zuki/processed/20250409/order_items_merged_20250409.csv",
+                        "s3://real-time-bucket-p4-zuki/data/products.csv",
+                        "s3://real-time-bucket-p4-zuki/temp/order_items_transformed_20250409.csv"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "Compute Kpis"
+    },
+    "Compute Kpis": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::ecs:runTask.sync",
+      "Parameters": {
+        "Cluster": "ecommerce-pipeline-cluster",
+        "TaskDefinition": "compute-task",
+        "LaunchType": "FARGATE",
+        "NetworkConfiguration": {
+          "AwsvpcConfiguration": {
+            "Subnets": ["subnet-0d8436345ee46b7b8", "subnet-0c258e856f0e04aca"],
+            "SecurityGroups": ["sg-0222dcff8c650af7c"],
+            "AssignPublicIp": "ENABLED"
+          }
+        },
+        "Overrides": {
+          "ContainerOverrides": [
+            {
+              "Name": "compute-container",
+              "Command": [
+                "s3://real-time-bucket-p4-zuki/temp/order_items_transformed_20250409.csv",
+                "s3://real-time-bucket-p4-zuki/temp/orders_transformed_20250409.csv",
+                "s3://real-time-bucket-p4-zuki/output/category_kpis.csv",
+                "s3://real-time-bucket-p4-zuki/output/order_kpis.csv"
+              ]
+            }
+          ]
+        }
+      },
+      "End": true
+    }
+  }
+}

@@ -1,5 +1,6 @@
 s3://your-ecommerce-bucket/
 ├── data/                   # Root folder for all incoming raw files
+|   ├──products.csv
 │   ├── 20250409/         # Date-based subfolders
 │   │   ├── manifest_20250409.json  # Single manifest for all files
 │   │   ├── orders/     # Orders-specific files
