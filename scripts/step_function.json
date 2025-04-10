@@ -186,6 +186,21 @@
           ]
         }
       },
+      "Next": "Write to DynamoDB"
+    },
+    "Write to DynamoDB": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+      "Parameters": {
+        "FunctionName": "write_to_dynamodb",
+        "Payload": {
+          "category_kpi_file": "s3://real-time-bucket-p4-zuki/output/category_kpis.csv",
+          "order_kpi_file": "s3://real-time-bucket-p4-zuki/output/order_kpis.csv",
+          "category_table": "category-Level-table",
+          "order_table": "order-level-table",
+          "taskToken.$": "$$.Task.Token"
+        }
+      },
       "End": true
     }
   }
