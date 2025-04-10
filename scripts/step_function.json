@@ -29,13 +29,17 @@
                   "ContainerOverrides": [
                     {
                       "Name": "validate-container",
-                      "Command": [
-                        "s3://real-time-bucket-p4-zuki/processed/20250409/orders_merged_20250409.csv"
+                      "Environment": [
+                        {
+                          "Name": "FILE_PATH",
+                          "Value.$": "$.processedFiles.orders"
+                        }
                       ]
                     }
                   ]
                 }
               },
+              "ResultPath": "$.validateOutput.orders",
               "End": true
             }
           }
@@ -64,18 +68,23 @@
                   "ContainerOverrides": [
                     {
                       "Name": "validate-container",
-                      "Command": [
-                        "s3://real-time-bucket-p4-zuki/processed/20250409/order_items_merged_20250409.csv"
+                      "Environment": [
+                        {
+                          "Name": "FILE_PATH",
+                          "Value.$": "$.processedFiles.order_items"
+                        }
                       ]
                     }
                   ]
                 }
               },
+              "ResultPath": "$.validateOutput.order_items",
               "End": true
             }
           }
         }
       ],
+      "ResultPath": "$.validateResults",
       "Next": "Transform Step"
     },
     "Transform Step": {
@@ -105,15 +114,25 @@
                   "ContainerOverrides": [
                     {
                       "Name": "transform-container",
-                      "Command": [
-                        "s3://real-time-bucket-p4-zuki/processed/20250409/orders_merged_20250409.csv",
-                        "none",
-                        "s3://real-time-bucket-p4-zuki/temp/orders_transformed_20250409.csv"
+                      "Environment": [
+                        {
+                          "Name": "INPUT_FILE",
+                          "Value.$": "$.processedFiles.orders"
+                        },
+                        {
+                          "Name": "PRODUCTS_FILE",
+                          "Value": "none"
+                        },
+                        {
+                          "Name": "OUTPUT_FILE",
+                          "Value": "s3://real-time-bucket-p4-zuki/temp/orders_transformed.csv"
+                        }
                       ]
                     }
                   ]
                 }
               },
+              "ResultPath": "$.transformOutput.orders",
               "End": true
             }
           }
@@ -142,20 +161,31 @@
                   "ContainerOverrides": [
                     {
                       "Name": "transform-container",
-                      "Command": [
-                        "s3://real-time-bucket-p4-zuki/processed/20250409/order_items_merged_20250409.csv",
-                        "s3://real-time-bucket-p4-zuki/data/products.csv",
-                        "s3://real-time-bucket-p4-zuki/temp/order_items_transformed_20250409.csv"
+                      "Environment": [
+                        {
+                          "Name": "INPUT_FILE",
+                          "Value.$": "$.processedFiles.order_items"
+                        },
+                        {
+                          "Name": "PRODUCTS_FILE",
+                          "Value": "s3://real-time-bucket-p4-zuki/data/products.csv"
+                        },
+                        {
+                          "Name": "OUTPUT_FILE",
+                          "Value": "s3://real-time-bucket-p4-zuki/temp/order_items_transformed.csv"
+                        }
                       ]
                     }
                   ]
                 }
               },
+              "ResultPath": "$.transformOutput.order_items",
               "End": true
             }
           }
         }
       ],
+      "ResultPath": "$.transformResults",
       "Next": "Compute Kpis"
     },
     "Compute Kpis": {
@@ -176,16 +206,29 @@
           "ContainerOverrides": [
             {
               "Name": "compute-container",
-              "Command": [
-                "s3://real-time-bucket-p4-zuki/temp/order_items_transformed_20250409.csv",
-                "s3://real-time-bucket-p4-zuki/temp/orders_transformed_20250409.csv",
-                "s3://real-time-bucket-p4-zuki/output/category_kpis.csv",
-                "s3://real-time-bucket-p4-zuki/output/order_kpis.csv"
+              "Environment": [
+                {
+                  "Name": "ORDER_ITEMS_FILE",
+                  "Value": "s3://real-time-bucket-p4-zuki/temp/order_items_transformed.csv"
+                },
+                {
+                  "Name": "ORDERS_FILE",
+                  "Value": "s3://real-time-bucket-p4-zuki/temp/orders_transformed.csv"
+                },
+                {
+                  "Name": "CATEGORY_OUTPUT_FILE",
+                  "Value": "s3://real-time-bucket-p4-zuki/output/category_kpis.csv"
+                },
+                {
+                  "Name": "ORDER_OUTPUT_FILE",
+                  "Value": "s3://real-time-bucket-p4-zuki/output/order_kpis.csv"
+                }
               ]
             }
           ]
         }
       },
+      "ResultPath": "$.computeOutput",
       "Next": "Write to DynamoDB"
     },
     "Write to DynamoDB": {
