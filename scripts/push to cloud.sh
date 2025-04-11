@@ -5,19 +5,19 @@ aws ecr create-repository --repository-name compute-kpis --region eu-west-1
 
 # Login to ECR
 aws ecr get-login-password --region eu-west-1 \
-| docker login --username AWS --password-stdin 448049788660.dkr.ecr.eu-west-1.amazonaws.com
+| docker login --username AWS --password-stdin 123456789.dkr.ecr.eu-west-1.amazonaws.com
 
 # Validate-data
-docker tag validate-data:latest 448049788660.dkr.ecr.eu-west-1.amazonaws.com/validate-data:latest
-docker push 448049788660.dkr.ecr.eu-west-1.amazonaws.com/validate-data:latest
+docker tag validate-data:latest 123456789.dkr.ecr.eu-west-1.amazonaws.com/validate-data:latest
+docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/validate-data:latest
 
 # Transform-data
-docker tag transform-data:latest 448049788660.dkr.ecr.eu-west-1.amazonaws.com/transform-data:latest
-docker push 448049788660.dkr.ecr.eu-west-1.amazonaws.com/transform-data:latest
+docker tag transform-data:latest 123456789.dkr.ecr.eu-west-1.amazonaws.com/transform-data:latest
+docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/transform-data:latest
 
 # Compute-kpis
-docker tag compute-kpis:latest 448049788660.dkr.ecr.eu-west-1.amazonaws.com/compute-kpis:latest
-docker push 448049788660.dkr.ecr.eu-west-1.amazonaws.com/compute-kpis:latest
+docker tag compute-kpis:latest 123456789.dkr.ecr.eu-west-1.amazonaws.com/compute-kpis:latest
+docker push 123456789.dkr.ecr.eu-west-1.amazonaws.com/compute-kpis:latest
 
 aws ecs create-cluster --cluster-name ecommerce-pipeline-cluster --region eu-west-1
 

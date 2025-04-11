@@ -11,25 +11,18 @@ s3://your-ecommerce-bucket/
 │   │       └── order_items_part2.csv
 ├── processed/             # Successfully processed files
 │   ├── 20250409/
-│   │   ├── orders_merged_20250409.csv
-│   │   └── order_items_merged_20250409.csv
+│   │   ├── orders_merged.csv
+│   │   └── order_items_merged.csv
 │   └── 20250410/
 │       ├── orders_20250410.csv
 │       └── order_items_20250410.csv
-├── errors/                # Failed files
+├── temp/             # Successfully processed files
+│       ├── orders_transformed.csv
+│       └── order_items_transformed.csv
+├── errors/             # Files that fail validation
 │   ├── 20250409/
-│   │   ├── orders/
-│   │   │   ├── orders_part1_20250409.csv
-│   │   │   └── error_log_orders_20250409.txt
-│   │   └── order_items/
-│   │       ├── order_items_part1_20250409.csv
-│   │       └── error_log_order_items_20250409.txt
+│   │   ├── orders_merged.csv
+│   │   └── order_items_merged.csv
 │   └── 20250410/
-│       ├── orders/
-│       │   ├── orders_20250410.csv
-│       └── order_items/
-│           ├── order_items_20250410.csv
-└── logs/                  # Optional: Pipeline execution logs
-    ├── 20250409/
-    │   └── pipeline_run_20250409.json
-    └── 20250410/
+│       ├── orders.csv
+│       └── order_items.csv

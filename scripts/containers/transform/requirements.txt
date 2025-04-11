@@ -1,0 +1,4 @@
+pandas
+fsspec
+s3fs
+boto3

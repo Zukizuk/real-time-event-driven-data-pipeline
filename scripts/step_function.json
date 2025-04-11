@@ -85,7 +85,71 @@
         }
       ],
       "ResultPath": "$.validateResults",
-      "Next": "Transform Step"
+      "Next": "Transform Step",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "Failure",
+          "ResultPath": "$.validateOutput.errors"
+        }
+      ]
+    },
+    "Failure": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "Failed Message",
+          "States": {
+            "Failed Message": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::sns:publish",
+              "Parameters": {
+                "TopicArn": "arn:aws:sns:eu-west-1:123456789:ecommerce-pipeline-alerts",
+                "Message": {
+                  "Status": "Failed ❌",
+                  "Pipeline": "E-Commerce Data Pipeline",
+                  "ExecutionId.$": "$$.Execution.Id",
+                  "ErrorOutput.$": "$.validateOutput.errors",
+                  "ProcessedFiles.$": "$.processedFiles",
+                  "Timestamp.$": "$$.State.EnteredTime"
+                },
+                "Subject": "E-Commerce Pipeline Execution Failed ❌"
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Archive Error Files",
+          "States": {
+            "Archive Error Files": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "FunctionName": "archive_error_files",
+                "Payload.$": "$"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2,
+                  "JitterStrategy": "FULL"
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ],
+      "End": true
     },
     "Transform Step": {
       "Type": "Parallel",
@@ -243,6 +307,35 @@
           "order_table": "order-level-table",
           "taskToken.$": "$$.Task.Token"
         }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 5,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "ResultPath": "$.writeOutput",
+      "Next": "Succeed Message"
+    },
+    "Succeed Message": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::sns:publish",
+      "Parameters": {
+        "TopicArn": "arn:aws:sns:eu-west-1:123456789:ecommerce-pipeline-alerts",
+        "Message": {
+          "Status": "SUCCESS ✅",
+          "Pipeline": "E-Commerce Data Pipeline",
+          "ExecutionId.$": "$$.Execution.Id",
+          "ProcessedFiles.$": "$.processedFiles",
+          "Timestamp.$": "$$.State.EnteredTime"
+        },
+        "Subject": "E-Commerce Pipeline Execution Succeeded ✅"
       },
       "End": true
     }

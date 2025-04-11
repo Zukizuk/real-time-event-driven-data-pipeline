@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import logging
+import os
 from datetime import datetime, timezone
 import boto3
 import io
@@ -218,9 +219,17 @@ def main(input_file, products_file, output_file):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        logger.error("Incorrect number of arguments provided")
-        print("TRANSFORM_FAILED: ❌ Please provide input file, products file (or 'none' if not needed), and output file paths")
+    # Get file paths from environment variables instead of sys.argv
+    input_file = os.environ.get("INPUT_FILE")
+    products_file = os.environ.get("PRODUCTS_FILE")
+    output_file = os.environ.get("OUTPUT_FILE")
+    
+    if not input_file or not output_file:  # products_file can be optional
+        logger.error("Required environment variables missing (INPUT_FILE and OUTPUT_FILE are mandatory)")
+        print("TRANSFORM_FAILED: ❌ Please provide INPUT_FILE and OUTPUT_FILE environment variables")
         sys.exit(1)
-    input_file, products_file, output_file = sys.argv[1], sys.argv[2], sys.argv[3]
-    main(input_file, products_file if products_file != 'none' else None, output_file)
+    
+    # Handle 'none' case for products_file
+    products_file = None if products_file == 'none' else products_file
+    
+    main(input_file, products_file, output_file)

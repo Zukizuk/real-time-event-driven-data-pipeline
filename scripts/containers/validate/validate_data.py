@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import logging
+import os
 from datetime import datetime
 
 # Configure logging
@@ -116,8 +117,10 @@ def main(file_path):
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        logger.error("Please provide a file path")
-        print("VALIDATION_FAILED: ❌ Please provide a file path")
+    # Get file path from environment variable instead of sys.argv
+    file_path = os.environ.get("FILE_PATH")
+    if not file_path:
+        logger.error("Please provide a file path via FILE_PATH environment variable")
+        print("VALIDATION_FAILED: ❌ Please provide a file path via FILE_PATH environment variable")
         sys.exit(1)
-    main(sys.argv[1])
+    main(file_path)

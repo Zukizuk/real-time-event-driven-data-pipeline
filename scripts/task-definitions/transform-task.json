@@ -4,22 +4,17 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::448049788660:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::123456789:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "transform-container",
-      "image": "448049788660.dkr.ecr.us-east-1.amazonaws.com/transform-data:latest",
+      "image": "123456789.dkr.ecr.your-region.amazonaws.com/transform-data:latest",
       "essential": true,
-      "command": [
-        "/app/data/order_items.csv",
-        "/app/data/products.csv",
-        "/app/data/output/temp/order_items_transformed.csv"
-      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/transform-task",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "your-region",
           "awslogs-stream-prefix": "transform"
         }
       }

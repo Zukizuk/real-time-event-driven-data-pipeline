@@ -1,6 +1,7 @@
 import pandas as pd
 import sys
 import logging
+import os
 from datetime import datetime, timezone
 import boto3
 import io
@@ -137,8 +138,15 @@ def main(order_items_file, orders_file, category_output_file, order_output_file)
         sys.exit(1)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 5:
-        logger.error("Please provide order_items, orders, category_output, and order_output file paths")
-        print("COMPUTE_FAILED: ❌ Please provide order_items, orders, category_output, and order_output file paths")
+    # Get file paths from environment variables instead of sys.argv
+    order_items_file = os.environ.get("ORDER_ITEMS_FILE")
+    orders_file = os.environ.get("ORDERS_FILE")
+    category_output_file = os.environ.get("CATEGORY_OUTPUT_FILE")
+    order_output_file = os.environ.get("ORDER_OUTPUT_FILE")
+    
+    if not all([order_items_file, orders_file, category_output_file, order_output_file]):
+        logger.error("Required environment variables missing (ORDER_ITEMS_FILE, ORDERS_FILE, CATEGORY_OUTPUT_FILE, ORDER_OUTPUT_FILE)")
+        print("COMPUTE_FAILED: ❌ Please provide ORDER_ITEMS_FILE, ORDERS_FILE, CATEGORY_OUTPUT_FILE, and ORDER_OUTPUT_FILE environment variables")
         sys.exit(1)
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    
+    main(order_items_file, orders_file, category_output_file, order_output_file)

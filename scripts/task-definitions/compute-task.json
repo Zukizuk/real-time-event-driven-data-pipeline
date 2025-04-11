@@ -4,23 +4,17 @@
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
   "memory": "512",
-  "executionRoleArn": "arn:aws:iam::448049788660:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::123456789:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "compute-container",
-      "image": "448049788660.dkr.ecr.us-east-1.amazonaws.com/compute-kpis:latest",
+      "image": "123456789.dkr.ecr.your-region.amazonaws.com/compute-kpis:latest",
       "essential": true,
-      "command": [
-        "/app/data/output/temp/order_items_transformed.csv",
-        "/app/data/output/temp/orders_transformed.csv",
-        "/app/data/output/category_kpis.csv",
-        "/app/data/output/order_kpis.csv"
-      ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/compute-task",
-          "awslogs-region": "us-east-1",
+          "awslogs-region": "your-region",
           "awslogs-stream-prefix": "compute"
         }
       }
