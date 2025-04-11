@@ -36,6 +36,11 @@ _Figure 1: High-level architecture of the data processing pipeline_
 ├── test/                 # Test suite
 │   ├── local/           # Local testing configurations
 │   ├── test_result/     # Test execution results
+│   │   ├── dynamo_result/ # Sample DynamoDB table exports
+│   │   │   ├── category-level-table.csv
+│   │   │   └── order-level-table.csv
+│   │   ├── stepfunction_execution.png
+│   │   └── success_email.png
 │   ├── main.py          # Main test script
 │   └── manifest.json    # Test manifest
 ├── requirements.txt      # Project dependencies
@@ -155,6 +160,51 @@ _Figure 4: Successful Step Function execution_
 ![Success Notification](test/test_result/success_email.png)
 _Figure 5: Success notification email_
 
+</details>
+
+## DynamoDB Results
+
+After successful pipeline execution, the following KPIs are stored in DynamoDB tables:
+
+### Category-Level KPIs
+
+<details>
+<summary>View Category-Level Table Sample</summary>
+
+```csv
+category,order_date,avg_order_value,avg_return_rate,daily_revenue
+Electronics,2025-03-08,78.04764227642276,18.69918699186992,9599.86
+Electronics,2025-03-09,86.12895833333333,11.805555555555555,12402.57
+Sports,2025-03-08,79.07544642857144,16.071428571428573,8856.45
+Sports,2025-03-09,75.3943918918919,12.162162162162163,11158.37
+```
+
+Key metrics:
+
+- Average order value per category
+- Return rate by category
+- Daily revenue by category
+</details>
+
+### Order-Level KPIs
+
+<details>
+<summary>View Order-Level Table Sample</summary>
+
+```csv
+order_date,return_rate,total_items_sold,total_orders,total_revenue,unique_customers
+2025-03-25,18.421052631578945,999,342,79223.33,340
+2025-03-21,18.3453237410072,810,278,66476.97,278
+2025-03-08,23.776223776223777,870,286,67398.91,278
+```
+
+Key metrics:
+
+- Daily return rate
+- Total items sold
+- Total orders
+- Total revenue
+- Number of unique customers
 </details>
 
 ## Architecture
