@@ -2,7 +2,7 @@
 
 This project implements a robust data processing pipeline for e-commerce data using AWS services. The pipeline handles the processing of product, order, and order item data through a series of validation, transformation, and computation steps. The solution leverages AWS ECS, Lambda functions, and Step Functions to create a scalable and maintainable data processing workflow.
 
-<details>
+<details open>
 <summary>View Architecture Diagram</summary>
 
 ![Architecture Diagram](assets/images/Architecture.png)
