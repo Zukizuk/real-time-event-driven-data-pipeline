@@ -5,7 +5,6 @@ cd "$(dirname "$0")"
 echo "Validating files..."
 docker run --rm -v $(pwd)/data:/app/data validate-data:latest /app/data/order_items.csv || exit 1
 docker run --rm -v $(pwd)/data:/app/data validate-data:latest /app/data/orders.csv || exit 1
-# docker run --rm -v $(pwd)/data:/app/data validate-data:latest /app/data/products.csv || exit 1
 
 # Transform
 echo "Transforming files..."

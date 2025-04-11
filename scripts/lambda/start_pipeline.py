@@ -82,7 +82,7 @@ def lambda_handler(event, context):
     }
     
     # Replace with your actual state machine ARN
-    state_machine_arn = 'arn:aws:states:eu-west-1:123456789:stateMachine:EcommerceValidationPipeline'
+    state_machine_arn = 'arn:aws:states:your-region:123456789:stateMachine:EcommerceValidationPipeline'
     
     # Execute Step Function
     response = step_functions.start_execution(

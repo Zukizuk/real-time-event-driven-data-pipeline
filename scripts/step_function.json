@@ -17,11 +17,8 @@
                 "LaunchType": "FARGATE",
                 "NetworkConfiguration": {
                   "AwsvpcConfiguration": {
-                    "Subnets": [
-                      "subnet-0d8436345ee46b7b8",
-                      "subnet-0c258e856f0e04aca"
-                    ],
-                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "Subnets": ["subnet-123456789", "subnet-123456789"],
+                    "SecurityGroups": ["sg-123456789"],
                     "AssignPublicIp": "ENABLED"
                   }
                 },
@@ -56,11 +53,8 @@
                 "LaunchType": "FARGATE",
                 "NetworkConfiguration": {
                   "AwsvpcConfiguration": {
-                    "Subnets": [
-                      "subnet-0d8436345ee46b7b8",
-                      "subnet-0c258e856f0e04aca"
-                    ],
-                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "Subnets": ["subnet-123456789", "subnet-123456789"],
+                    "SecurityGroups": ["sg-123456789"],
                     "AssignPublicIp": "ENABLED"
                   }
                 },
@@ -104,7 +98,7 @@
               "Type": "Task",
               "Resource": "arn:aws:states:::sns:publish",
               "Parameters": {
-                "TopicArn": "arn:aws:sns:eu-west-1:123456789:ecommerce-pipeline-alerts",
+                "TopicArn": "arn:aws:sns:your-region:123456789:ecommerce-pipeline-alerts",
                 "Message": {
                   "Status": "Failed ❌",
                   "Pipeline": "E-Commerce Data Pipeline",
@@ -166,11 +160,8 @@
                 "LaunchType": "FARGATE",
                 "NetworkConfiguration": {
                   "AwsvpcConfiguration": {
-                    "Subnets": [
-                      "subnet-0d8436345ee46b7b8",
-                      "subnet-0c258e856f0e04aca"
-                    ],
-                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "Subnets": ["subnet-123456789", "subnet-123456789"],
+                    "SecurityGroups": ["sg-123456789"],
                     "AssignPublicIp": "ENABLED"
                   }
                 },
@@ -189,7 +180,7 @@
                         },
                         {
                           "Name": "OUTPUT_FILE",
-                          "Value": "s3://real-time-bucket-p4-zuki/temp/orders_transformed.csv"
+                          "Value": "s3://your-bucket-name/temp/orders_transformed.csv"
                         }
                       ]
                     }
@@ -213,11 +204,8 @@
                 "LaunchType": "FARGATE",
                 "NetworkConfiguration": {
                   "AwsvpcConfiguration": {
-                    "Subnets": [
-                      "subnet-0d8436345ee46b7b8",
-                      "subnet-0c258e856f0e04aca"
-                    ],
-                    "SecurityGroups": ["sg-0222dcff8c650af7c"],
+                    "Subnets": ["subnet-123456789", "subnet-123456789"],
+                    "SecurityGroups": ["sg-123456789"],
                     "AssignPublicIp": "ENABLED"
                   }
                 },
@@ -232,11 +220,11 @@
                         },
                         {
                           "Name": "PRODUCTS_FILE",
-                          "Value": "s3://real-time-bucket-p4-zuki/data/products.csv"
+                          "Value": "s3://your-bucket-name/data/products.csv"
                         },
                         {
                           "Name": "OUTPUT_FILE",
-                          "Value": "s3://real-time-bucket-p4-zuki/temp/order_items_transformed.csv"
+                          "Value": "s3://your-bucket-name/temp/order_items_transformed.csv"
                         }
                       ]
                     }
@@ -261,8 +249,8 @@
         "LaunchType": "FARGATE",
         "NetworkConfiguration": {
           "AwsvpcConfiguration": {
-            "Subnets": ["subnet-0d8436345ee46b7b8", "subnet-0c258e856f0e04aca"],
-            "SecurityGroups": ["sg-0222dcff8c650af7c"],
+            "Subnets": ["subnet-123456789", "subnet-123456789"],
+            "SecurityGroups": ["sg-123456789"],
             "AssignPublicIp": "ENABLED"
           }
         },
@@ -273,19 +261,19 @@
               "Environment": [
                 {
                   "Name": "ORDER_ITEMS_FILE",
-                  "Value": "s3://real-time-bucket-p4-zuki/temp/order_items_transformed.csv"
+                  "Value": "s3://your-bucket-name/temp/order_items_transformed.csv"
                 },
                 {
                   "Name": "ORDERS_FILE",
-                  "Value": "s3://real-time-bucket-p4-zuki/temp/orders_transformed.csv"
+                  "Value": "s3://your-bucket-name/temp/orders_transformed.csv"
                 },
                 {
                   "Name": "CATEGORY_OUTPUT_FILE",
-                  "Value": "s3://real-time-bucket-p4-zuki/output/category_kpis.csv"
+                  "Value": "s3://your-bucket-name/output/category_kpis.csv"
                 },
                 {
                   "Name": "ORDER_OUTPUT_FILE",
-                  "Value": "s3://real-time-bucket-p4-zuki/output/order_kpis.csv"
+                  "Value": "s3://your-bucket-name/output/order_kpis.csv"
                 }
               ]
             }
@@ -301,8 +289,8 @@
       "Parameters": {
         "FunctionName": "write_to_dynamodb",
         "Payload": {
-          "category_kpi_file": "s3://real-time-bucket-p4-zuki/output/category_kpis.csv",
-          "order_kpi_file": "s3://real-time-bucket-p4-zuki/output/order_kpis.csv",
+          "category_kpi_file": "s3://your-bucket-name/output/category_kpis.csv",
+          "order_kpi_file": "s3://your-bucket-name/output/order_kpis.csv",
           "category_table": "category-Level-table",
           "order_table": "order-level-table",
           "taskToken.$": "$$.Task.Token"
@@ -327,7 +315,7 @@
       "Type": "Task",
       "Resource": "arn:aws:states:::sns:publish",
       "Parameters": {
-        "TopicArn": "arn:aws:sns:eu-west-1:123456789:ecommerce-pipeline-alerts",
+        "TopicArn": "arn:aws:sns:your-region:123456789:ecommerce-pipeline-alerts",
         "Message": {
           "Status": "SUCCESS ✅",
           "Pipeline": "E-Commerce Data Pipeline",
