@@ -106,6 +106,25 @@ pip install -r requirements.txt
 aws configure
 ```
 
+## S3 Notification Setup
+
+To enable automatic pipeline triggering, configure S3 notifications for your bucket:
+
+1. Go to the AWS S3 Console
+2. Select your e-commerce bucket
+3. Navigate to "Properties" tab
+4. Scroll down to "Event notifications"
+5. Click "Create event notification"
+6. Configure the notification:
+   - Event name: `PipelineTrigger`
+   - Prefix: `data/`
+   - Suffix: `.json`
+   - Event types: Select "All object create events"
+   - Destination: Select "Lambda function"
+   - Choose the `start_pipeline` Lambda function
+
+This configuration will trigger the pipeline whenever a manifest.json file is uploaded to the data/ directory of your S3 bucket.
+
 ## Dependencies
 
 - pandas: Data manipulation and analysis
